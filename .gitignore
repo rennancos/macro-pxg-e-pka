@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# PyInstaller
+build/
+dist/
+*.spec
+# Saidas de tentativas de build antigas (~216 MB), geradas com --distpath.
+build_rotation_*/
+
+# Dados locais gerados em tempo de execucao
+config/settings.json
+config/profiles/*.json
+config/**/*.bak
+config/**/*.old
+logs/
+*.log
+
+# Editores / SO
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini

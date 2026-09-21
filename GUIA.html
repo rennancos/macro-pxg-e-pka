@@ -1,0 +1,901 @@
+<title>Guia do PKA / PXG Hotkeys</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:ital,wght@0,400;0,700;0,900&family=JetBrains+Mono:wght@500;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&display=swap">
+
+<style>
+  :root {
+    --ground:        #f4f6f9;
+    --panel:         #ffffff;
+    --panel-sunk:    #eaeef4;
+    --ink:           #131923;
+    --ink-soft:      #454f61;
+    --ink-mute:      #6b7588;
+    --rule:          #d5dbe5;
+    --rule-soft:     #e4e9f0;
+    --accent:        #1f5f92;
+    --accent-soft:   #e7f0f8;
+    --ok:            #1e8a4f;
+    --ok-soft:       #e2f5ea;
+    --warn:          #8a6400;
+    --warn-soft:     #fbf2d8;
+    --danger:        #b03544;
+    --danger-soft:   #fbe6e9;
+    --cap-face:      #ffffff;
+    --cap-edge:      #c3cbd8;
+    --cap-ink:       #1f2937;
+
+    --display: "Chivo", "Segoe UI", system-ui, sans-serif;
+    --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+    --mono: "JetBrains Mono", "Cascadia Mono", Consolas, monospace;
+  }
+
+  :root:not([data-theme="light"]) {
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #0e131b;
+      --panel:       #161d28;
+      --panel-sunk:  #111823;
+      --ink:         #e7ecf3;
+      --ink-soft:    #b3bccb;
+      --ink-mute:    #7d879a;
+      --rule:        #2a3444;
+      --rule-soft:   #212a38;
+      --accent:      #6aaee0;
+      --accent-soft: #16293a;
+      --ok:          #4fd08a;
+      --ok-soft:     #113023;
+      --warn:        #e8bc4a;
+      --warn-soft:   #322611;
+      --danger:      #f0808f;
+      --danger-soft: #38191f;
+      --cap-face:    #232c3a;
+      --cap-edge:    #0c1017;
+      --cap-ink:     #dde4ee;
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:      #0e131b;
+    --panel:       #161d28;
+    --panel-sunk:  #111823;
+    --ink:         #e7ecf3;
+    --ink-soft:    #b3bccb;
+    --ink-mute:    #7d879a;
+    --rule:        #2a3444;
+    --rule-soft:   #212a38;
+    --accent:      #6aaee0;
+    --accent-soft: #16293a;
+    --ok:          #4fd08a;
+    --ok-soft:     #113023;
+    --warn:        #e8bc4a;
+    --warn-soft:   #322611;
+    --danger:      #f0808f;
+    --danger-soft: #38191f;
+    --cap-face:    #232c3a;
+    --cap-edge:    #0c1017;
+    --cap-ink:     #dde4ee;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 17px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 0 72px;
+  }
+
+  /* ---------- cabeçalho ---------- */
+
+  header.hero {
+    padding-block: 56px 36px;
+    border-bottom: 2px solid var(--ink);
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 14px;
+  }
+
+  h1 {
+    font-family: var(--display);
+    font-weight: 900;
+    font-size: clamp(2.1rem, 6vw, 3.4rem);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    margin: 0 0 18px;
+    text-wrap: balance;
+  }
+
+  .standfirst {
+    font-size: 1.16rem;
+    color: var(--ink-soft);
+    max-width: 60ch;
+    margin: 0;
+  }
+
+  /* ---------- corpo em duas colunas ---------- */
+
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 40px;
+    margin-top: 40px;
+  }
+
+  @media (min-width: 940px) {
+    .layout { grid-template-columns: 208px minmax(0, 1fr); gap: 56px; }
+    nav.index { position: sticky; top: 24px; align-self: start; }
+  }
+
+  nav.index ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 18px;
+    border-left: 2px solid var(--rule);
+  }
+
+  @media (min-width: 940px) {
+    nav.index ol { flex-direction: column; flex-wrap: nowrap; }
+  }
+
+  nav.index a {
+    display: block;
+    padding: 5px 0 5px 14px;
+    margin-left: -2px;
+    border-left: 2px solid transparent;
+    color: var(--ink-mute);
+    text-decoration: none;
+    font-size: 0.94rem;
+    line-height: 1.35;
+  }
+
+  nav.index a:hover,
+  nav.index a:focus-visible {
+    color: var(--accent);
+    border-left-color: var(--accent);
+  }
+
+  main { min-width: 0; max-width: 68ch; }
+
+  section { margin-bottom: 52px; scroll-margin-top: 20px; }
+
+  h2 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 1.62rem;
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin: 30px 0 4px;
+    text-wrap: balance;
+  }
+
+  .deck {
+    color: var(--ink-mute);
+    margin: 0 0 20px;
+    font-size: 1rem;
+  }
+
+  p { margin: 0 0 16px; }
+  a { color: var(--accent); }
+
+  ul, ol.steps { padding-left: 0; margin: 0 0 18px; }
+  ul { list-style: none; }
+  ul li {
+    position: relative;
+    padding-left: 20px;
+    margin-bottom: 9px;
+  }
+  ul li::before {
+    content: "";
+    position: absolute;
+    left: 2px;
+    top: 0.68em;
+    width: 6px;
+    height: 2px;
+    background: var(--accent);
+  }
+
+  /* sequência real: instalar, primeiro uso */
+  ol.steps {
+    list-style: none;
+    counter-reset: passo;
+  }
+  ol.steps > li {
+    counter-increment: passo;
+    position: relative;
+    padding-left: 44px;
+    margin-bottom: 18px;
+  }
+  ol.steps > li::before {
+    content: counter(passo);
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--panel);
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  /* ---------- teclas ---------- */
+
+  kbd {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.8em;
+    font-weight: 700;
+    line-height: 1;
+    padding: 4px 7px 5px;
+    border-radius: 5px;
+    background: var(--cap-face);
+    color: var(--cap-ink);
+    border: 1px solid var(--cap-edge);
+    box-shadow: 0 2px 0 var(--cap-edge);
+    white-space: nowrap;
+    transform: translateY(-1px);
+  }
+
+  code {
+    font-family: var(--mono);
+    font-size: 0.85em;
+    background: var(--panel-sunk);
+    padding: 2px 5px;
+    border-radius: 4px;
+    word-break: break-word;
+  }
+
+  /* ---------- selos de estado (iguais aos da barra do app) ---------- */
+
+  .badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.72em;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 3px 8px;
+    border-radius: 3px;
+    vertical-align: 1px;
+    white-space: nowrap;
+  }
+  .badge.on   { background: var(--ok-soft);     color: var(--ok); }
+  .badge.off  { background: var(--danger-soft); color: var(--danger); }
+  .badge.hold { background: var(--warn-soft);   color: var(--warn); }
+
+  /* ---------- blocos de destaque ---------- */
+
+  .note {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    padding: 16px 18px;
+    margin: 0 0 20px;
+    border-radius: 0 6px 6px 0;
+  }
+  .note.alert { border-left-color: var(--danger); background: var(--danger-soft); }
+  .note.care  { border-left-color: var(--warn);   background: var(--warn-soft); }
+  .note > :last-child { margin-bottom: 0; }
+  .note strong { font-weight: 700; }
+
+  .note-title {
+    display: block;
+    font-family: var(--display);
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  /* ---------- tabelas ---------- */
+
+  .scroller { overflow-x: auto; margin: 0 0 20px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+    min-width: 440px;
+  }
+  th, td {
+    text-align: left;
+    padding: 10px 14px 10px 0;
+    border-bottom: 1px solid var(--rule-soft);
+    vertical-align: top;
+  }
+  th {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    border-bottom: 1px solid var(--rule);
+    white-space: nowrap;
+  }
+  td:first-child { white-space: nowrap; padding-right: 22px; }
+  tbody tr:last-child td { border-bottom: none; }
+
+  /* ---------- exemplo de macro ---------- */
+
+  .macro {
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 6px 0;
+    margin: 0 0 20px;
+  }
+  .macro-row {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 8px 18px;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .macro-row:last-child { border-bottom: none; }
+  .macro-n {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink-mute);
+    font-variant-numeric: tabular-nums;
+  }
+  .macro-what { flex: 1; min-width: 0; }
+  .macro-wait {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-mute);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .macro-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px;
+    padding: 10px 18px 12px;
+    border-bottom: 2px solid var(--rule);
+    font-family: var(--display);
+    font-weight: 700;
+  }
+  .macro-head .trigger {
+    font-family: var(--body);
+    font-weight: 400;
+    color: var(--ink-mute);
+    font-size: 0.92rem;
+  }
+
+  footer {
+    margin-top: 12px;
+    padding-top: 22px;
+    border-top: 1px solid var(--rule);
+    color: var(--ink-mute);
+    font-size: 0.92rem;
+    max-width: 68ch;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<div class="shell">
+
+  <header class="hero">
+    <p class="eyebrow">PKA / PXG Hotkeys — guia de uso</p>
+    <h1>Uma tecla sua, uma ação no jogo</h1>
+    <p class="standfirst">
+      Este programa transforma uma tecla ou um botão do mouse numa sequência de
+      golpes, itens ou comandos no PokeAlliance e no PokeXGames. Nada acontece
+      sozinho: toda ação começa num toque seu.
+    </p>
+  </header>
+
+  <div class="layout">
+
+    <nav class="index" aria-label="Seções do guia">
+      <ol>
+        <li><a href="#o-que-e">O que ele é</a></li>
+        <li><a href="#instalar">Instalar</a></li>
+        <li><a href="#ativar">Ativar as hotkeys</a></li>
+        <li><a href="#abas">As abas</a></li>
+        <li><a href="#macro">Montar um macro</a></li>
+        <li><a href="#gatilhos">Teclado e mouse</a></li>
+        <li><a href="#regras">Regras que evitam dor de cabeça</a></li>
+        <li><a href="#rotacao">Rotação de Pokémon</a></li>
+        <li><a href="#seguranca">Parar tudo</a></li>
+        <li><a href="#problemas">Quando não funciona</a></li>
+        <li><a href="#arquivos">Onde ficam os arquivos</a></li>
+      </ol>
+    </nav>
+
+    <main>
+
+      <section id="o-que-e">
+        <h2>O que ele é — e o que ele não é</h2>
+        <p class="deck">Vale ler estes dois parágrafos antes de instalar.</p>
+
+        <p>
+          É um <strong>gerenciador de hotkeys</strong>. Você diz “quando eu
+          apertar <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>2</kbd>, envie a tecla
+          <kbd>2</kbd> para o jogo”, ou monta uma sequência de até doze etapas
+          disparada por um toque só.
+        </p>
+
+        <p>
+          Ele <strong>não lê a memória do jogo</strong>, <strong>não olha a
+          tela</strong> e <strong>não roda sozinho em ciclo</strong>. Ele não
+          sabe se o seu Pokémon está vivo, com quanto de vida, nem se o golpe
+          entrou. Tudo que ele faz é mandar teclas — as mesmas que você mandaria
+          com os dedos, só que na ordem e no tempo que você configurou.
+        </p>
+
+        <div class="note care">
+          <span class="note-title">Isso tem uma consequência prática</span>
+          <p>
+            Como o programa não enxerga o jogo, ele nunca “corrige” nada. Se uma
+            etapa falhar no jogo, ele segue para a próxima do mesmo jeito. Monte
+            as sequências pensando nisso.
+          </p>
+        </div>
+      </section>
+
+      <section id="instalar">
+        <h2>Instalar e abrir</h2>
+        <p class="deck">Não tem instalador. É uma pasta que você descompacta e usa.</p>
+
+        <ol class="steps">
+          <li>
+            Descompacte o <code>.zip</code> inteiro numa pasta sua — por exemplo
+            <code>C:\Jogos\PKA_PXG_Hotkeys</code>.
+            <strong>Não</strong> rode de dentro do zip, e não separe o
+            <code>.exe</code> do resto: ele precisa da pasta
+            <code>_internal</code> que vem junto.
+          </li>
+          <li>
+            Dê dois cliques em <code>PKA_PXG_Hotkeys.exe</code>.
+          </li>
+          <li>
+            O Windows vai pedir permissão de administrador. Clique em
+            <strong>Sim</strong>. Sem isso o programa abre, parece funcionar e
+            não envia tecla nenhuma — veja o porquê logo abaixo.
+          </li>
+          <li>
+            Na primeira vez ele cria as pastas <code>config</code> e
+            <code>logs</code> ao lado do executável, já com um perfil padrão.
+          </li>
+        </ol>
+
+        <div class="note alert">
+          <span class="note-title">Por que administrador é obrigatório</span>
+          <p>
+            O cliente do jogo roda como administrador. O Windows não deixa um
+            programa comum enviar teclas para um programa elevado — e não avisa,
+            não dá erro, simplesmente descarta. O sintoma é exatamente o de um
+            programa quebrado: você aperta a hotkey e nada acontece. Por isso o
+            executável pede elevação ao abrir.
+          </p>
+        </div>
+      </section>
+
+      <section id="ativar">
+        <h2>Ativar as hotkeys</h2>
+        <p class="deck">O passo que todo mundo esquece na primeira vez.</p>
+
+        <p>
+          Configurar não é ativar. No canto superior direito há um botão grande e,
+          ao lado dele, um selo de estado:
+        </p>
+
+        <div class="scroller">
+          <table>
+            <thead>
+              <tr><th>Selo</th><th>Significa</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="badge off">DESATIVADO</span></td>
+                <td>Nenhuma hotkey está registrada. Nada vai disparar.</td>
+              </tr>
+              <tr>
+                <td><span class="badge on">ATIVO</span></td>
+                <td>As hotkeys estão valendo.</td>
+              </tr>
+              <tr>
+                <td><span class="badge hold">PAUSADO</span></td>
+                <td>
+                  Pausa momentânea enquanto você grava uma tecla nova, para o
+                  programa não disparar o que você está digitando.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note">
+          <span class="note-title">Salvar com as hotkeys desligadas não aplica nada</span>
+          <p>
+            Se você editar um macro com o selo em <span class="badge off">DESATIVADO</span>,
+            o programa grava a alteração no arquivo, mas o gatilho novo só passa
+            a valer quando você clicar em <strong>ATIVAR HOTKEYS</strong>. Com as
+            hotkeys já ligadas, salvar reaplica tudo na hora.
+          </p>
+        </div>
+      </section>
+
+      <section id="abas">
+        <h2>As abas</h2>
+        <p class="deck">Sete telas na barra lateral esquerda.</p>
+
+        <div class="scroller">
+          <table>
+            <thead>
+              <tr><th>Aba</th><th>Para quê</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Dashboard</strong></td>
+                <td>Resumo do perfil ativo: o que está ligado e em qual tecla.</td>
+              </tr>
+              <tr>
+                <td><strong>Skills</strong></td>
+                <td>
+                  Os doze slots de golpe. Para cada um: a hotkey que você aperta,
+                  a tecla que o jogo recebe e o tempo de toque em milissegundos.
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Combo</strong></td>
+                <td>O editor de macros — sequências de etapas. É onde você passa a maior parte do tempo.</td>
+              </tr>
+              <tr>
+                <td><strong>Pokemon</strong></td>
+                <td>
+                  Seus perfis. Cada perfil guarda skills, ações e macros próprios,
+                  e pertence a um jogo (PKA ou PXG). Dá para criar, duplicar,
+                  renomear e excluir.
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Hotkeys</strong></td>
+                <td>As três ações avulsas: Revive, Offensive e Defensive.</td>
+              </tr>
+              <tr>
+                <td><strong>Configuracoes</strong></td>
+                <td>
+                  Teclas do chat, tempos, parada de emergência e as travas de
+                  segurança. Os valores são <strong>independentes por jogo</strong>.
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Logs</strong></td>
+                <td>O que o programa fez, na ordem. É aqui que você descobre por que algo não disparou.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="macro">
+        <h2>Montar um macro</h2>
+        <p class="deck">Na aba Combo. Até doze macros por perfil.</p>
+
+        <p>Cada etapa é de um dos três tipos:</p>
+
+        <ul>
+          <li>
+            <strong>Skill</strong> — usa um dos doze slots configurados na aba
+            Skills. Se você mudar a tecla do slot depois, todos os macros que o
+            usam acompanham.
+          </li>
+          <li>
+            <strong>Tecla</strong> — envia uma tecla avulsa, sem passar pelos
+            slots. Serve para itens da barra de ação, <kbd>Espaço</kbd> para
+            coletar, e coisas do tipo.
+          </li>
+          <li>
+            <strong>Comando</strong> — abre o chat, digita o texto, dá Enter e
+            fecha o chat. Para comandos como <code>!offensive</code>.
+          </li>
+        </ul>
+
+        <p>
+          Cada etapa tem um <strong>Esperar … ms</strong>, que é a pausa depois
+          dela. Um exemplo real de macro de ataque:
+        </p>
+
+        <div class="macro">
+          <div class="macro-head">
+            ataques
+            <span class="trigger">— gatilho: roda do mouse para cima</span>
+          </div>
+          <div class="macro-row"><span class="macro-n">01</span><span class="macro-what">Tecla <kbd>f</kbd> <span style="color:var(--ink-mute)">(entrar em modo ofensivo)</span></span><span class="macro-wait">40 ms</span></div>
+          <div class="macro-row"><span class="macro-n">02</span><span class="macro-what">Skill 1 — Ataque 1</span><span class="macro-wait">40 ms</span></div>
+          <div class="macro-row"><span class="macro-n">03</span><span class="macro-what">Skill 2 — Ataque 2</span><span class="macro-wait">40 ms</span></div>
+          <div class="macro-row"><span class="macro-n">04</span><span class="macro-what">Skill 3 — Ataque 3</span><span class="macro-wait">40 ms</span></div>
+          <div class="macro-row"><span class="macro-n">05</span><span class="macro-what">Tecla <kbd>e</kbd></span><span class="macro-wait">—</span></div>
+        </div>
+
+        <div class="note care">
+          <span class="note-title">Não abaixe as pausas demais</span>
+          <p>
+            O próprio cliente do jogo impõe <strong>30 ms</strong> entre
+            acionamentos de hotkey. Se você mandar mais rápido que isso, o jogo
+            engole etapas e o macro parece “pular golpes”. O programa não deixa
+            configurar abaixo desse piso.
+          </p>
+        </div>
+
+        <p>
+          O macro roda <strong>uma vez</strong> e termina. Não existe repetição
+          automática: para repetir, aciona de novo.
+        </p>
+      </section>
+
+      <section id="gatilhos">
+        <h2>Gatilhos: teclado e mouse</h2>
+        <p class="deck">Cada macro tem um gatilho, e ele pode ser do teclado ou do mouse.</p>
+
+        <h3>Teclado</h3>
+        <p>
+          Escolha <strong>Teclado</strong> e clique em Gravar. Aperte a
+          combinação que quiser — <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>2</kbd>,
+          <kbd>F5</kbd>, o que preferir.
+        </p>
+
+        <h3>Mouse</h3>
+        <p>
+          Escolha <strong>Mouse</strong> e selecione no menu. São cinco opções:
+        </p>
+        <ul>
+          <li>Roda para cima</li>
+          <li>Roda para baixo</li>
+          <li>Botão do meio</li>
+          <li>Botão lateral 1 (o de “voltar”)</li>
+          <li>Botão lateral 2 (o de “avançar”)</li>
+        </ul>
+
+        <p>
+          O botão esquerdo e o direito <strong>não</strong> aparecem na lista, de
+          propósito: o clique continua chegando ao jogo normalmente, então um
+          macro neles dispararia em cada clique que você desse — inclusive dentro
+          da própria interface do programa.
+        </p>
+
+        <div class="note">
+          <span class="note-title">Mouse com 12 botões laterais</span>
+          <p>
+            Naga, G600 e parecidos: o Windows só reconhece cinco botões de mouse,
+            então os doze laterais desses mouses são enviados pelo próprio
+            hardware <strong>como teclas de teclado</strong> — normalmente
+            <kbd>1</kbd> a <kbd>=</kbd>. Ou seja, eles já funcionam: use o gatilho
+            de <strong>Teclado</strong> e grave o botão como se fosse tecla. Se
+            não pegar, confira no software do mouse se ele está no modo teclado
+            (costuma ser o padrão).
+          </p>
+        </div>
+      </section>
+
+      <section id="regras">
+        <h2>Regras que evitam dor de cabeça</h2>
+        <p class="deck">Três comportamentos que parecem bug e não são.</p>
+
+        <h3>A hotkey não pode ser a mesma tecla que a ação envia</h3>
+        <p>
+          Se você configurar uma skill com hotkey <kbd>1</kbd> que envia a tecla
+          <kbd>1</kbd>, o programa <strong>recusa esse gatilho</strong> e avisa no
+          log. Não é limitação: é que o programa bloqueia a tecla da hotkey para
+          o jogo e depois injeta a mesma tecla de volta, o que faz o golpe travar
+          enquanto você segura. Sem o gatilho, a tecla <kbd>1</kbd> chega ao jogo
+          direto — que é o que você queria desde o começo.
+        </p>
+
+        <h3>O jogo precisa estar em primeiro plano</h3>
+        <p>
+          Por padrão o programa só age com a janela do jogo em foco. É o que
+          impede um macro de disparar enquanto você digita no navegador. Quando
+          ele recusa por esse motivo, escreve no log:
+          <code>Macro X ignorada: o jogo nao esta em primeiro plano</code>.
+          Se o seu cliente não for reconhecido, aponte o executável dele em
+          <strong>Configuracoes</strong>.
+        </p>
+
+        <h3>Um giro da roda dispara uma vez só</h3>
+        <p>
+          Um único giro físico da roda gera vários eventos. A
+          <strong>trava da roda</strong> (80 ms por padrão, em Configuracoes)
+          garante que só o primeiro conte. O mesmo vale para os botões laterais,
+          contra repique.
+        </p>
+      </section>
+
+      <section id="rotacao">
+        <h2>Rotação de Pokémon</h2>
+        <p class="deck">Só no PXG, e precisa de um cuidado que os outros recursos não pedem.</p>
+
+        <p>
+          A rotação usa <kbd>Ctrl</kbd>+<kbd>1</kbd> a <kbd>Ctrl</kbd>+<kbd>6</kbd>
+          para trocar de Pokémon. A cada acionamento do gatilho ela manda a tecla
+          de revive no Pokémon atual e em seguida entra com o próximo slot.
+        </p>
+
+        <div class="note care">
+          <span class="note-title">Sincronize o slot antes do primeiro giro</span>
+          <p>
+            Como o programa não lê o jogo, ele não tem como saber qual Pokémon
+            está em campo. Ele descobre <em>vendo você apertar</em>
+            <kbd>Ctrl</kbd>+<kbd>1</kbd> a <kbd>Ctrl</kbd>+<kbd>6</kbd>, ou pelo
+            botão <strong>Sincronizar</strong> na aba Combo. Antes disso a
+            rotação se recusa a rodar e avisa no log. Se a contagem sair do lugar,
+            é só apertar de novo o Ctrl do Pokémon que está em campo.
+          </p>
+        </div>
+      </section>
+
+      <section id="seguranca">
+        <h2>Parar tudo</h2>
+        <p class="deck">Duas teclas que você deve decorar antes de usar o programa para valer.</p>
+
+        <div class="scroller">
+          <table>
+            <thead>
+              <tr><th>Tecla</th><th>O que faz</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><kbd>Pause</kbd></td>
+                <td>
+                  <strong>Parada de emergência.</strong> Cancela o que estiver
+                  rodando e desliga todas as hotkeys de uma vez. Fica ativa o
+                  tempo todo, mesmo com as hotkeys desligadas.
+                </td>
+              </tr>
+              <tr>
+                <td><kbd>Esc</kbd></td>
+                <td>
+                  <strong>Cancelar macro.</strong> Interrompe a sequência em
+                  andamento, sem desligar o resto.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>
+          As duas são configuráveis em <strong>Configuracoes</strong>. A parada de
+          emergência nunca é bloqueada para o jogo — é tecla de segurança e
+          precisa funcionar sempre.
+        </p>
+      </section>
+
+      <section id="problemas">
+        <h2>Quando não funciona</h2>
+        <p class="deck">Abra a aba <strong>Logs</strong>. A resposta quase sempre está escrita lá.</p>
+
+        <div class="scroller">
+          <table>
+            <thead>
+              <tr><th>Sintoma</th><th>Causa provável</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Aperto a hotkey e nada acontece, nem no log</td>
+                <td>
+                  As hotkeys estão em <span class="badge off">DESATIVADO</span>.
+                  Clique em ATIVAR HOTKEYS.
+                </td>
+              </tr>
+              <tr>
+                <td>O log diz que disparou, mas o jogo não reage</td>
+                <td>
+                  O programa não está como administrador, ou o jogo não estava em
+                  foco no momento.
+                </td>
+              </tr>
+              <tr>
+                <td><code>Hotkey ignorada -&gt; … ja usada por …</code></td>
+                <td>Duas ações com o mesmo gatilho. A segunda é recusada.</td>
+              </tr>
+              <tr>
+                <td><code>Hotkey ignorada -&gt; … dispara a propria tecla</code></td>
+                <td>A hotkey é igual à tecla enviada. Veja a seção de regras.</td>
+              </tr>
+              <tr>
+                <td>O macro pula etapas</td>
+                <td>Pausas curtas demais. Suba o “Esperar … ms”.</td>
+              </tr>
+              <tr>
+                <td>Uma etapa virou texto no chat</td>
+                <td>
+                  O chat ficou com o foco depois de um comando. Ajuste a tecla
+                  <strong>Fechar chat</strong> em Configuracoes (padrão
+                  <kbd>Ctrl</kbd>+<kbd>E</kbd>).
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="arquivos">
+        <h2>Onde ficam os arquivos</h2>
+        <p class="deck">Tudo ao lado do executável. Nada no registro do Windows.</p>
+
+        <div class="scroller">
+          <table>
+            <thead>
+              <tr><th>Caminho</th><th>Conteúdo</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>config\settings.json</code></td>
+                <td>Configurações gerais e por jogo.</td>
+              </tr>
+              <tr>
+                <td><code>config\profiles\</code></td>
+                <td>Um arquivo <code>.json</code> por perfil: skills, ações e macros.</td>
+              </tr>
+              <tr>
+                <td><code>logs\app.log</code></td>
+                <td>O mesmo que a aba Logs mostra, em arquivo.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>
+          Para <strong>levar sua configuração para outro PC</strong>, copie a
+          pasta <code>config</code> inteira. Para <strong>dividir um perfil</strong>
+          com alguém, mande só o <code>.json</code> dele — a pessoa põe o arquivo
+          em <code>config\profiles\</code> e ele aparece na aba Pokemon.
+        </p>
+
+        <p>
+          Se algo ficar irrecuperável, feche o programa, apague a pasta
+          <code>config</code> e abra de novo: ele recria tudo no padrão.
+        </p>
+      </section>
+
+      <footer>
+        Programa de uso local: ele só envia teclas para a janela do jogo que já
+        está aberta no seu computador. Use por sua conta e risco, respeitando as
+        regras do servidor em que você joga.
+      </footer>
+
+    </main>
+  </div>
+</div>
