@@ -16,8 +16,10 @@ from app.constants import (
     MODE_DEFENSIVE,
     MODE_NONE,
     MODE_OFFENSIVE,
+    STEP_CLICK,
     STEP_COMMAND,
     STEP_KEY,
+    STEP_POINTER_HOME,
     STEP_SKILL,
     MOUSE_LABELS,
     MOUSE_TRIGGERS,
@@ -30,6 +32,7 @@ from app.services.combo_manager import ComboManager, MacroAction
 from app.services.hotkey_manager import Binding, BindResult, HotkeyManager, normalize
 from app.services.profile_manager import ProfileManager
 from app.services.settings_manager import SettingsManager
+from app.services.team_bar import find_fainted
 from app.services.wheel_manager import WheelManager
 from app.services.window_manager import WindowManager, CLIENT_EXECUTABLES, CLIENT_WINDOW_CLASSES
 
@@ -42,6 +45,7 @@ SWITCH_NAME = "Troca de Pokémon"
 # slot casa por ele: quando o texto e o casamento moram em lugares diferentes,
 # renomear um deixa o outro para tras em silencio.
 PULL_STEP = "Puxar Pokémon"
+_SLOT_KEYS = {f"ctrl+{n}": n for n in range(1, 7)}
 
 
 def _is_self_trigger(hotkey: str, sent_keys: Iterable[str]) -> bool:
@@ -216,7 +220,10 @@ class AppController:
                     )
                 )
 
-        if profile.game == "PXG" and profile.rotation_enabled:
+        tracks_slot = profile.rotation_enabled or any(
+            m.switch and m.enabled for m in profile.macros
+        )
+        if profile.game == "PXG" and tracks_slot:
             for slot in range(1, 7):
                 bindings.append(Binding(
                     label=f"Acompanhar Pokémon {slot}",
@@ -288,31 +295,51 @@ class AppController:
         visto (ou do botao Sincronizar), e o handler de Ctrl+n ignora a tecla
         que esta macro envia para nao contar duas vezes.
         """
-        if not self._enabled or self._suspended or self.combo.running:
+        if not self._enabled or self._suspended:
+            log.info("Troca ignorada: hotkeys desativadas ou em edicao")
+            return False
+        if self.combo.running:
+            log.info("Troca ignorada: macro '%s' ainda em execucao", self.combo.current)
             return False
         if self.settings.require_game_focus and not self.windows.is_game_focused():
+            log.info("Troca ignorada: janela do jogo nao esta em primeiro plano")
             return False
         with self._state_lock:
             current = self._active_pokemon_slot
-        if current is None:
-            log.warning("Troca ignorada: pressione Ctrl+1 a Ctrl+6 para sincronizar")
-            self._set_last_action("Sincronize com Ctrl+1 a Ctrl+6")
-            return False
 
-        next_slot = current % 6 + 1
+        next_slot = self._next_slot(current)
         actions = [MacroAction(
             label=f"{PULL_STEP} {next_slot}", kind=STEP_KEY,
             key=f"ctrl+{next_slot}", hold_ms=DEFAULT_HOLD_MS,
         )]
+        # Alvo e inicio sob a mesma trava: uma tentativa concorrente recusada
+        # nao pode apagar o alvo da que foi aceita.
         with self._state_lock:
+            if not self.combo.start(actions, SWITCH_NAME):
+                return False
             self._rotation_target = next_slot
-        if not self.combo.start(actions, SWITCH_NAME):
-            with self._state_lock:
-                self._rotation_target = None
-            return False
         log.info("Troca iniciada: Ctrl+%d", next_slot)
         self._set_last_action(f"Pokémon {next_slot}")
         return True
+
+    def _next_slot(self, current: int | None) -> int:
+        """Proximo slot da fila, comum a troca e ao revive.
+
+        A fila sao os Ctrl+n listados nas etapas da macro de troca, na ordem
+        (tirar Ctrl+6 pula o slot 6); menos de dois, os seis. Sem sincronizar,
+        vem o primeiro da fila.
+        """
+        macro = next((m for m in self.profile.macros if m.switch and m.enabled), None)
+        slots = [
+            _SLOT_KEYS[key] for key in
+            (step.key.strip().lower() for step in (macro.steps if macro else []))
+            if key in _SLOT_KEYS
+        ]
+        if len(slots) < 2:
+            slots = list(range(1, 7))
+        if current in slots:
+            return slots[(slots.index(current) + 1) % len(slots)]
+        return slots[0]
 
     def _rotate_pokemon(self) -> bool:
         if not self._enabled or self._suspended or self.combo.running:
@@ -325,46 +352,58 @@ class AppController:
             return False
         with self._state_lock:
             current = self._active_pokemon_slot
-        if current is None:
-            log.warning("Rotação ignorada: pressione Ctrl+1 a Ctrl+6 para sincronizar")
-            self._set_last_action("Sincronize com Ctrl+1 a Ctrl+6")
-            return False
         revive_step = macro.steps[0]
         if not revive_step.key:
             log.warning("Rotação ignorada: tecla do revive não configurada")
             return False
-        # Puxa o Pokemon e revive ESSE mesmo. O revive age em quem acabou de
-        # ser puxado, entao nao ha alvo a escolher: duas teclas resolvem.
-        #
-        # ponytail: o caminho "reviver o que SAIU" precisava clicar no retrato
-        # dele na barra do time — o executor sabe clicar (click /
-        # restore_pointer) e o perfil guarda as posicoes (team_slots), tudo
-        # com teste. Esta desligado aqui, nao apagado: e para onde voltar
-        # quando o rodizio entre os seis for retomado.
-        next_slot = current % 6 + 1
+        # Puxa o proximo; o desmaiado desce para a fila dos retratos pequenos,
+        # em posicao que muda a cada troca. Na hora do clique, a barra de vida
+        # vazia diz qual e: clica nele deixando o cursor la, revive, devolve.
+        # O revive do PXG age no que esta sob o cursor; devolver o ponteiro
+        # antes da tecla faz o revive cair no vazio.
+        next_slot = self._next_slot(current)
         actions = [
             MacroAction(
                 label=f"{PULL_STEP} {next_slot}", kind=STEP_KEY,
                 key=f"ctrl+{next_slot}", hold_ms=DEFAULT_HOLD_MS,
                 delay_ms=revive_step.delay_ms,
             ),
-            MacroAction(
-                label=f"Revive Pokémon {next_slot}", kind=STEP_KEY,
-                key=revive_step.key, hold_ms=self.profile.revive.hold_ms,
-            ),
         ]
+        can_click = sum(1 for slot in self.profile.team_slots[:5] if slot) >= 2
+        if can_click:
+            actions.append(MacroAction(
+                label="Apontar Pokémon desmaiado", kind=STEP_CLICK,
+                restore=False, target=self._fainted_portrait,
+            ))
+        else:
+            log.warning("Revive sem clique: grave as posições dos retratos pequenos")
+        actions.append(MacroAction(
+            label="Revive", kind=STEP_KEY,
+            key=revive_step.key, hold_ms=self.profile.revive.hold_ms,
+        ))
+        if can_click:
+            actions.append(MacroAction(label="Devolver ponteiro", kind=STEP_POINTER_HOME))
+        # Alvo e inicio sob a mesma trava: uma tentativa concorrente recusada
+        # nao pode apagar o alvo da que foi aceita.
         with self._state_lock:
+            if not self.combo.start(actions, ROTATION_NAME):
+                return False
             self._rotation_target = next_slot
-        if not self.combo.start(actions, ROTATION_NAME):
-            with self._state_lock:
-                self._rotation_target = None
-            return False
         log.info(
-            "Rotação iniciada: puxar Pokémon %d (Ctrl+%d), depois revive nele",
+            "Rotação iniciada: puxar Pokémon %d (Ctrl+%d), %s",
             next_slot, next_slot,
+            "revive no desmaiado" if can_click else "revive sem clique",
         )
-        self._set_last_action(f"Puxar {next_slot} → revive {next_slot}")
+        self._set_last_action(f"Puxar {next_slot} → revive")
         return True
+
+    def _fainted_portrait(self) -> tuple[int, int] | None:
+        """Retrato pequeno (tela) cuja barra de vida esta vazia, ou None."""
+        portraits = [
+            spot for spot in (self._team_slot_on_screen(n) for n in range(1, 6)) if spot
+        ]
+        index = find_fainted(portraits)
+        return portraits[index] if index is not None else None
 
     def _team_slot_on_screen(self, slot: int) -> tuple[int, int] | None:
         """Posicao gravada do retrato, convertida para coordenadas de tela.
@@ -747,14 +786,9 @@ class AppController:
         self._set_last_action(label)
 
     def _on_macro_finish(self, status: str) -> None:
-        for nome in (ROTATION_NAME, SWITCH_NAME):
-            if not status.startswith(nome):
-                continue
+        if status.startswith((ROTATION_NAME, SWITCH_NAME)):
             with self._state_lock:
-                if status == f"{nome} concluida":
-                    self._active_pokemon_slot = self._rotation_target
                 self._rotation_target = None
-            break
         log.info("%s", status)
         self._set_last_action(status)
 

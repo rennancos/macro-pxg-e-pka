@@ -109,5 +109,61 @@ class NavigationTest(unittest.TestCase):
                     window.destroy()
 
 
+class GameThemeTest(unittest.TestCase):
+    """PKA pinta em azul, PXG em vermelho; a troca nao deixa sobra da outra cor."""
+
+    def cores(self, window):
+        from app.gui.widgets import _COLOR_ATTRS
+        import customtkinter as ctk
+        vistas, pendentes = set(), [window]
+        while pendentes:
+            w = pendentes.pop()
+            pendentes.extend(w.winfo_children())
+            if isinstance(w, ctk.CTkBaseClass):
+                for attr in _COLOR_ATTRS:
+                    try:
+                        v = w.cget(attr)
+                    except Exception:  # noqa: BLE001
+                        continue
+                    for c in (v if isinstance(v, (list, tuple)) else [v]):
+                        if isinstance(c, str):
+                            vistas.add(c.lower())
+        return vistas
+
+    def test_switching_game_repaints_everything(self):
+        from app.gui.widgets import _BLUE_TO_RED
+        azuis, vermelhos = set(_BLUE_TO_RED), set(_BLUE_TO_RED.values())
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            profiles = root / "profiles"
+            profiles.mkdir()
+            with (
+                patch("app.services.profile_manager.PROFILES_DIR", profiles),
+                patch("app.services.profile_manager.ensure_dirs"),
+                patch("app.services.settings_manager.SETTINGS_FILE", root / "settings.json"),
+                patch("app.services.settings_manager.ensure_dirs"),
+                patch.object(AppController, "setup_emergency", return_value=True),
+            ):
+                controller = AppController()
+                window = MainWindow(controller)
+                try:
+                    for titulo in window.page_titles:  # monta todas as telas
+                        window.show_page(titulo)
+                    for jogo, certo, errado in (("PKA", azuis, vermelhos),
+                                                ("PXG", vermelhos, azuis),
+                                                ("PKA", azuis, vermelhos)):
+                        window._on_game_selected(jogo)
+                        window._refresh()
+                        for titulo in window.page_titles:  # listas recriadas depois
+                            window.show_page(titulo)
+                        window.update()
+                        self.assertEqual(controller.profile.game, jogo)
+                        cores = self.cores(window)
+                        self.assertTrue(cores & certo, jogo)
+                        self.assertFalse(cores & errado, (jogo, cores & errado))
+                finally:
+                    window.destroy()
+
+
 if __name__ == "__main__":
     unittest.main()

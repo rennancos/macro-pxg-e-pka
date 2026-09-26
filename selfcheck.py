@@ -45,6 +45,9 @@ class FakeExecutor:
             self.sent.append(key)
         return True
 
+    def restore_pointer(self) -> bool:
+        return True
+
     def send_command(self, command: str) -> bool:
         with self._lock:
             self.sent.append(f"chat:{command}")

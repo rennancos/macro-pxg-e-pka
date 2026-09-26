@@ -28,6 +28,8 @@ from app.gui.widgets import (
     Card,
     HotkeyEntry,
     IntEntry,
+    accent,
+    accent_hover,
 )
 from app.models.profile import Macro, MacroStep
 
@@ -260,8 +262,8 @@ class ComboPage(BasePage):
                 text=f"{mark}{macro.name}\n{trigger}",
                 anchor="w",
                 height=46,
-                fg_color="#245a8d" if index == self._selected else "gray25",
-                hover_color="#1f4d78",
+                fg_color=accent() if index == self._selected else "gray25",
+                hover_color=accent_hover(),
                 command=lambda i=index: self._select(i),
             ).pack(fill="x", pady=3)
 
@@ -285,20 +287,28 @@ class ComboPage(BasePage):
         self._render_steps()
 
     def _show_rotation_panel(self, macro: Macro) -> None:
-        if not macro.rotation:
+        if not (macro.rotation or macro.switch):
             self.rotation_panel.pack_forget()
             return
         slot = self.controller.active_pokemon_slot
         if slot is not None:
             self.rotation_slot.set(str(slot))
-        delay = macro.steps[0].delay_ms if macro.steps else 0
-        key = macro.steps[0].key if macro.steps else "(vazia)"
-        self.rotation_info.configure(text=(
-            f"Rotação: puxa o próximo Pokémon (Ctrl+1 a Ctrl+6) → espera "
-            f"{delay} ms → {key.upper()} para revivê-lo. "
-            "Sincronize o slot antes do primeiro giro. "
-            f"Slot acompanhado: {slot if slot is not None else 'desconhecido'}."
-        ))
+        acompanhado = f"Slot acompanhado: {slot if slot is not None else 'desconhecido'}."
+        if macro.rotation:
+            delay = macro.steps[0].delay_ms if macro.steps else 0
+            key = macro.steps[0].key if macro.steps else "(vazia)"
+            texto = (
+                f"Rotação: puxa o próximo Pokémon (Ctrl+1 a Ctrl+6) → espera "
+                f"{delay} ms → {key.upper()} para revivê-lo. "
+                "Sincronize o slot antes do primeiro giro. "
+            )
+        else:
+            texto = (
+                "Troca: cada giro envia o próximo Ctrl+n das etapas, na ordem. "
+                "Diga qual Pokémon está em campo agora; sem isso o primeiro "
+                "giro chama o primeiro da lista. "
+            )
+        self.rotation_info.configure(text=texto + acompanhado)
         self.rotation_panel.pack(fill="x", padx=16, pady=(4, 4))
 
     def _sync_rotation_slot(self) -> None:

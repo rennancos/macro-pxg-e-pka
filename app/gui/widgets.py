@@ -17,6 +17,69 @@ COLOR_ERROR = "#e05260"
 COLOR_MUTED = "#8b93a7"
 COLOR_ACCENT = "#3b8ed0"
 
+# Cor por jogo: PKA azul, PXG vermelho. Cada azul do tema "blue" do
+# customtkinter (e os dois do app) tem um vermelho de mesmo brilho. Verde,
+# amarelo e o vermelho de "remover/erro" indicam estado, nao jogo: ficam.
+_BLUE_TO_RED = {
+    "#3b8ed0": "#d0473b", "#1f6aa5": "#a5291f",  # botao, selecionado
+    "#36719f": "#9f3e36", "#144870": "#701a14",  # hover
+    "#27577d": "#7d2e27", "#203a4f": "#4f2320",  # hover do menu
+    "#245a8d": "#8d2a24", "#1f4d78": "#78231f",  # destaque do app
+}
+_RED_TO_BLUE = {red: blue for blue, red in _BLUE_TO_RED.items()}
+_COLOR_ATTRS = (
+    "fg_color", "hover_color", "button_color", "button_hover_color",
+    "progress_color", "selected_color", "selected_hover_color",
+)
+_current_game = "PKA"
+
+
+def accent() -> str:
+    """Cor de destaque (item ativo/selecionado) do jogo atual."""
+    return "#8d2a24" if _current_game == "PXG" else "#245a8d"
+
+
+def accent_hover() -> str:
+    return "#78231f" if _current_game == "PXG" else "#1f4d78"
+
+
+def _remap(value: Any, table: dict[str, str]) -> Any:
+    if isinstance(value, str):
+        return table.get(value.lower(), value)
+    if isinstance(value, (list, tuple)):
+        return type(value)(_remap(item, table) for item in value)
+    if isinstance(value, dict):
+        return {key: _remap(item, table) for key, item in value.items()}
+    return value
+
+
+def apply_game_theme(root: tk.Misc, game: str) -> None:
+    """Pinta a janela inteira com a cor do jogo, sem recriar nada.
+
+    Troca o tema padrao (widgets criados depois ja nascem na cor certa) e
+    percorre os que existem trocando cor por cor.
+    """
+    global _current_game
+    _current_game = "PXG" if game == "PXG" else "PKA"
+    table = _BLUE_TO_RED if _current_game == "PXG" else _RED_TO_BLUE
+    theme = ctk.ThemeManager.theme
+    theme.update(_remap(theme, table))
+
+    pending = [root]
+    while pending:
+        widget = pending.pop()
+        pending.extend(widget.winfo_children())
+        if not isinstance(widget, ctk.CTkBaseClass):
+            continue
+        for attr in _COLOR_ATTRS:
+            try:
+                value = widget.cget(attr)
+            except (ValueError, AttributeError, tk.TclError):
+                continue
+            new = _remap(value, table)
+            if new != value:
+                widget.configure(**{attr: new})
+
 
 class Card(ctk.CTkFrame):
     """Bloco visual com titulo opcional."""

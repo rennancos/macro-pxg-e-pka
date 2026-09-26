@@ -12,6 +12,8 @@ from app.gui.widgets import (
     COLOR_MUTED,
     BasePage,
     Card,
+    accent,
+    accent_hover,
 )
 from app.services.profile_manager import ProfileError
 
@@ -87,8 +89,8 @@ class ProfilesPage(BasePage):
                 self.listbox,
                 text=("* " if is_active else "   ") + f"[{self.controller.profiles.get(name).game}] {name}",
                 anchor="w",
-                fg_color="#245a8d" if is_active else "gray25",
-                hover_color="#1f4d78",
+                fg_color=accent() if is_active else "gray25",
+                hover_color=accent_hover(),
                 command=lambda n=name: self._select(n),
             )
             button.pack(fill="x", pady=3)

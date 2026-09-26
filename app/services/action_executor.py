@@ -15,9 +15,14 @@ from app.services.wheel_manager import mouse_module
 
 log = logging.getLogger(__name__)
 
+# Folga entre o modificador e a tecla de uma combinacao. Botao de calibragem:
+# se o jogo ainda perder combinacoes, subir; se a troca ficar lenta, descer.
+MODIFIER_LEAD_MS = 40
+
 
 def _sleep_ms(milliseconds: int) -> None:
     if milliseconds > 0:
+        log.info("Espera do envio: %d ms", milliseconds)
         time.sleep(milliseconds / 1000.0)
 
 
@@ -47,18 +52,34 @@ class ActionExecutor:
             log.warning("Acao ignorada: nenhuma tecla configurada")
             return False
         keyboard = keyboard_module()
+        # Combinacao (ctrl+1): modificadores primeiro, com folga, como uma
+        # pessoa aperta. Tudo no mesmo instante fazia o PXG ler so o "1".
+        parts = [p.strip() for p in key.split("+")]
+        if len(parts) < 2 or not all(parts):
+            parts = [key]
         with self._lock:
             try:
-                keyboard.press(key)
+                log.info("Tecla: pressionar %r (toque=%d ms)", key, max(0, hold_ms))
+                for modifier in parts[:-1]:
+                    keyboard.press(modifier)
+                    _sleep_ms(MODIFIER_LEAD_MS)
+                keyboard.press(parts[-1])
                 _sleep_ms(max(0, hold_ms))
-                keyboard.release(key)
+                keyboard.release(parts[-1])
+                for modifier in reversed(parts[:-1]):
+                    _sleep_ms(MODIFIER_LEAD_MS)
+                    keyboard.release(modifier)
+                log.info("Tecla: %r solta", key)
                 return True
             except Exception as exc:  # noqa: BLE001
                 log.error("Falha ao enviar a tecla %r: %s", key, exc)
-                try:
-                    keyboard.release(key)
-                except Exception:  # noqa: BLE001
-                    pass
+                log.info("Tecla: tentar soltar %r apos falha", key)
+                # Cada uma no seu try: uma falha nao pode deixar o Ctrl preso.
+                for part in reversed(parts):
+                    try:
+                        keyboard.release(part)
+                    except Exception:  # noqa: BLE001
+                        pass
                 return False
 
     def click(self, x: int, y: int, restore: bool = True) -> bool:
@@ -77,14 +98,18 @@ class ActionExecutor:
         with self._lock:
             try:
                 home = mouse.get_position()
+                log.info("Cursor: mover de %s para (%d, %d)", home, x, y)
                 mouse.move(x, y)
                 _sleep_ms(CLICK_SETTLE_MS)
+                log.info("Mouse: clique esquerdo em (%d, %d)", x, y)
                 mouse.click()
                 _sleep_ms(CLICK_SETTLE_MS)
                 if restore:
+                    log.info("Cursor: restaurar para %s", home)
                     mouse.move(*home)
                 else:
                     self._pointer_home = home
+                    log.info("Cursor: mantido no alvo; retorno guardado em %s", home)
                 return True
             except Exception as exc:  # noqa: BLE001
                 log.error("Falha ao clicar em (%d, %d): %s", x, y, exc)
@@ -98,10 +123,13 @@ class ActionExecutor:
         """
         home, self._pointer_home = self._pointer_home, None
         if home is None:
+            log.info("Cursor: nenhuma posicao pendente para restaurar")
             return True
         with self._lock:
             try:
+                log.info("Cursor: restaurar para %s", home)
                 mouse_module().move(*home)
+                log.info("Cursor: restaurado para %s", home)
                 return True
             except Exception as exc:  # noqa: BLE001
                 log.error("Falha ao devolver o ponteiro: %s", exc)
@@ -124,12 +152,16 @@ class ActionExecutor:
         with self._lock:
             try:
                 if settings.chat_key.strip():
+                    log.info("Chat: abrir com %r", settings.chat_key.strip())
                     keyboard.send(settings.chat_key.strip())
                     _sleep_ms(settings.chat_open_pause_ms)
+                log.info("Chat: digitar comando %r (intervalo=%d ms/tecla)", command, settings.type_delay_ms)
                 keyboard.write(command, delay=settings.type_delay_ms / 1000.0)
                 _sleep_ms(settings.chat_send_pause_ms)
+                log.info("Chat: confirmar com %r", settings.chat_confirm_key.strip() or "enter")
                 keyboard.send(settings.chat_confirm_key.strip() or "enter")
                 self._close_chat(keyboard, settings)
+                log.info("Chat: sequencia do comando enviada")
                 return True
             except Exception as exc:  # noqa: BLE001
                 log.error("Falha ao enviar o comando %r: %s", command, exc)
@@ -147,6 +179,7 @@ class ActionExecutor:
         if not close_key:
             return
         _sleep_ms(settings.chat_close_pause_ms)
+        log.info("Chat: fechar com %r", close_key)
         keyboard.send(close_key)
 
     def run_action(self, action: ActionConfig) -> bool:

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import threading
+import time
 from dataclasses import dataclass
 from typing import Callable
 
@@ -30,6 +31,9 @@ class MacroAction:
     x: int = 0
     y: int = 0
     restore: bool = True
+    # Alvo decidido na hora de clicar (a tela so mostra o desmaiado depois
+    # da troca). None do resolvedor = sem alvo, a macro para ali.
+    target: Callable[[], tuple[int, int] | None] | None = None
 
 
 class ComboManager:
@@ -84,6 +88,7 @@ class ComboManager:
         """Sinaliza o cancelamento; a espera entre etapas e interrompida."""
         if not self.running:
             return False
+        log.info("Macro %s: cancelamento solicitado", self._current)
         self._cancel.set()
         return True
 
@@ -97,22 +102,40 @@ class ComboManager:
     def _run(self, actions: list[MacroAction], name: str) -> None:
         total = len(actions)
         finished = "concluida"
+        started = time.perf_counter()
+        log.info("Macro %s: inicio (%d etapas)", name, total)
         try:
             for index, action in enumerate(actions, start=1):
                 if self._cancel.is_set():
+                    log.info("Macro %s: cancelada antes da etapa %d/%d", name, index, total)
                     finished = "cancelada"
                     break
+                log.info("Macro %s: etapa %d/%d iniciada: %s (tipo=%s)",
+                         name, index, total, action.label, action.kind)
+                step_started = time.perf_counter()
                 if not self._execute(action):
+                    log.error("Macro %s: etapa %d/%d falhou: %s", name, index, total, action.label)
                     finished = "interrompida por erro"
                     break
                 self._notify_step(f"{action.label} ({index}/{total})")
+                log.info("Macro %s: etapa %d/%d enviada em %.1f ms", name, index, total,
+                         (time.perf_counter() - step_started) * 1000)
+                if index < total:
+                    log.info("Macro %s: espera de %d ms apos etapa %d/%d",
+                             name, action.delay_ms, index, total)
                 if index < total and self._cancel.wait(action.delay_ms / 1000.0):
+                    log.info("Macro %s: espera interrompida por cancelamento", name)
                     finished = "cancelada"
                     break
         except Exception as exc:  # noqa: BLE001 - thread nunca derruba a app
             log.exception("Erro durante a macro %s: %s", name, exc)
             finished = "interrompida por erro"
         finally:
+            # Erro ou cancelamento no meio: o ponteiro nao pode ficar no
+            # retrato. Sem clique pendente, e um nada.
+            self._executor.restore_pointer()
+            log.info("Macro %s: %s (duracao %.1f ms)", name, finished,
+                     (time.perf_counter() - started) * 1000)
             self._cancel.clear()
             self._current = ""
             if self._on_finish is not None:
@@ -125,7 +148,14 @@ class ComboManager:
         if action.kind == STEP_COMMAND:
             return self._executor.send_command(action.command)
         if action.kind == STEP_CLICK:
-            return self._executor.click(action.x, action.y, action.restore)
+            x, y = action.x, action.y
+            if action.target is not None:
+                spot = action.target()
+                if spot is None:
+                    log.warning("%s: alvo nao encontrado na tela", action.label)
+                    return False
+                x, y = spot
+            return self._executor.click(x, y, action.restore)
         if action.kind == STEP_POINTER_HOME:
             return self._executor.restore_pointer()
         return self._executor.tap(action.key, action.hold_ms)

@@ -11,14 +11,44 @@ dist/
 *.spec
 # Saidas de tentativas de build antigas (~216 MB), geradas com --distpath.
 build_rotation_*/
+build_*/
+dist_*/
+release/
+release_*/
+*.exe
+*.dll
+*.zip
+*.7z
 
 # Dados locais gerados em tempo de execucao
 config/settings.json
 config/profiles/*.json
 config/**/*.bak
 config/**/*.old
+config/**
+!config/profiles/
+!config/profiles/.gitkeep
 logs/
 *.log
+*.bak
+*.old
+*.tmp
+backups/
+backup_*/
+
+# Segredos e ferramentas/resultados locais de auditoria
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+.audit-tools/
+.audit-results/
+.pytest_cache/
+.coverage
+htmlcov/
 
 # Editores / SO
 .vscode/

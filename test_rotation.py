@@ -56,35 +56,51 @@ class RotationTests(unittest.TestCase):
         self.controller._rotation_target = None
         self.controller._set_last_action = lambda text: None
 
-    def test_requires_manual_sync_and_revives_after_switch(self):
-        self.controller._rotate_pokemon()
-        self.assertEqual(self.controller.combo.actions, [])
+    def test_revive_without_sync_starts_at_first_slot(self):
+        self.assertTrue(self.controller._rotate_pokemon())
+        self.assertEqual(self.controller.combo.actions[0].key, "ctrl+1")
 
+    def test_revive_clicks_fainted_portrait_and_returns_pointer(self):
+        """Puxa, aponta o retrato com a barra de vida vazia, revive, devolve."""
+        from unittest import mock
+        from app.services import controller as ctl
+
+        self.controller._make_pokemon_slot_handler(6)()
+        self.assertTrue(self.controller._rotate_pokemon())
+        acoes = self.controller.combo.actions
+        self.assertEqual(
+            [a.kind for a in acoes], ["key", "click", "key", "pointer_home"]
+        )
+        self.assertEqual(acoes[0].key, "ctrl+1")
+        self.assertEqual(acoes[0].delay_ms, 300)
+        self.assertEqual(acoes[2].key, "q")
+        self.assertFalse(acoes[1].restore)
+        # O alvo so e lido na hora do clique: o 3o retrato pequeno esta vazio.
+        with mock.patch.object(ctl, "find_fainted", lambda retratos: 2):
+            self.assertEqual(acoes[1].target(), (1030, 560))  # origem (1000, 500)
+        with mock.patch.object(ctl, "find_fainted", lambda retratos: None):
+            self.assertIsNone(acoes[1].target())
+
+    def test_pull_is_tracked_and_cancel_keeps_previous_slot(self):
         self.controller._make_pokemon_slot_handler(4)()
         self.controller._rotate_pokemon()
         actions = self.controller.combo.actions
         self.assertEqual(self.controller.combo.name, ROTATION_NAME)
-        # Puxa o proximo e revive ESSE mesmo: duas teclas, sem clique.
-        self.assertEqual([action.key for action in actions], ["ctrl+5", "q"])
-        self.assertEqual(actions[0].delay_ms, 300)
-        self.assertEqual(actions[1].label, "Revive Pokémon 5")
-        self.controller._on_macro_step(f"{actions[0].label} (1/2)")
+        self.assertEqual(actions[0].key, "ctrl+5")
+        self.controller._on_macro_step(f"{actions[0].label} (1/4)")
         self.assertEqual(self.controller._active_pokemon_slot, 5)
         self.controller._on_macro_finish(f"{ROTATION_NAME} concluida")
         self.assertEqual(self.controller._active_pokemon_slot, 5)
 
-    def test_wraps_six_to_one_and_cancel_keeps_previous_slot(self):
+        self.controller.combo.running = False
         self.controller._make_pokemon_slot_handler(6)()
         self.controller._rotate_pokemon()
-        self.assertEqual(
-            [action.key for action in self.controller.combo.actions],
-            ["ctrl+1", "q"],
-        )
+        self.assertEqual(self.controller.combo.actions[0].key, "ctrl+1")
         self.controller._on_macro_finish(f"{ROTATION_NAME} cancelada")
         self.assertEqual(self.controller._active_pokemon_slot, 6)
 
     def test_runs_without_recorded_team_positions(self):
-        """Puxar + reviver nao depende de clique, logo nao depende das posicoes."""
+        """Sem posicoes gravadas: so teclas, sem clique no escuro."""
         self.profile.team_slots = [None] * 6
         self.controller._make_pokemon_slot_handler(4)()
         self.assertTrue(self.controller._rotate_pokemon())
@@ -150,9 +166,60 @@ class RotationTests(unittest.TestCase):
         self.assertEqual(
             [action.key for action in self.controller.combo.actions], ["ctrl+3"]
         )
-        # E o slot acompanhado avanca ao terminar, senao a proxima troca repete.
+        # O slot acompanhado avanca quando a tecla sai, senao a proxima troca repete.
+        acao = self.controller.combo.actions[0]
+        self.controller._on_macro_step(f"{acao.label} (1/1)")
         self.controller._on_macro_finish(f"{SWITCH_NAME} concluida")
         self.assertEqual(self.controller._active_pokemon_slot, 3)
+
+    def test_switch_cycles_only_listed_slots(self):
+        """Cada giro envia o proximo Ctrl+n da lista; o que nao esta e pulado."""
+        self.profile.macros.append(Macro(
+            name="trocar", hotkey="wheel_down", switch=True,
+            steps=[MacroStep(type="key", key=f"ctrl+{n}") for n in (1, 2, 4)],
+        ))
+        enviados = []
+        for inicio in (1, 2, 4, 6):
+            self.controller.combo.running = False
+            self.controller._make_pokemon_slot_handler(inicio)()
+            self.controller._switch_pokemon()
+            enviados.append(self.controller.combo.actions[0].key)
+        # 6 nao esta na lista: volta ao primeiro.
+        self.assertEqual(enviados, ["ctrl+2", "ctrl+4", "ctrl+1", "ctrl+1"])
+
+    def test_switch_without_sync_calls_first_slot(self):
+        self.profile.macros.append(Macro(
+            name="trocar", hotkey="wheel_up", switch=True,
+            steps=[MacroStep(type="key", key="ctrl+1")],
+        ))
+        self.assertTrue(self.controller._switch_pokemon())
+        self.assertEqual(self.controller.combo.actions[0].key, "ctrl+1")
+
+    def test_switch_tracks_ctrl_n_without_rotation(self):
+        self.profile.rotation_enabled = False
+        self.profile.macros = [Macro(
+            name="trocar", hotkey="wheel_down", switch=True,
+            steps=[MacroStep(type="key", key="ctrl+1")],
+        )]
+        labels = [b.label for b in self.controller.build_bindings()]
+        self.assertIn("Acompanhar Pokémon 1", labels)
+
+    def test_refused_concurrent_start_keeps_winner_target(self):
+        self.controller._make_pokemon_slot_handler(2)()
+        self.assertTrue(self.controller._rotate_pokemon())
+        self.controller.combo.running = False  # a checagem passou antes do inicio
+        self.controller.combo.start = lambda actions, name: False
+        self.assertFalse(self.controller._switch_pokemon())
+        self.assertEqual(self.controller._rotation_target, 3)
+
+    def test_manual_pick_during_rotation_survives_finish(self):
+        self.controller._make_pokemon_slot_handler(2)()
+        self.controller._rotate_pokemon()
+        acao = self.controller.combo.actions[0]
+        self.controller._on_macro_step(f"{acao.label} (1/2)")
+        self.controller._make_pokemon_slot_handler(5)()
+        self.controller._on_macro_finish(f"{ROTATION_NAME} concluida")
+        self.assertEqual(self.controller._active_pokemon_slot, 5)
 
     def test_switch_macro_is_routed_by_its_own_trigger(self):
         self.profile.macros.append(Macro(
@@ -177,6 +244,105 @@ class RotationTests(unittest.TestCase):
         self.assertTrue(all(not binding.suppress for binding in trackers))
         self.assertEqual(self.controller.wheel_bindings()["mouse_x1"], self.controller._rotate_pokemon)
 
+
+class ComboKeyTests(unittest.TestCase):
+    def test_modifier_goes_down_first_and_up_last(self):
+        from unittest import mock
+        from app.services import action_executor as ae
+
+        eventos = []
+        teclado = SimpleNamespace(
+            press=lambda k: eventos.append(("down", k)),
+            release=lambda k: eventos.append(("up", k)),
+        )
+        with mock.patch.object(ae, "keyboard_module", lambda: teclado), \
+                mock.patch.object(ae.time, "sleep", lambda s: eventos.append(("wait", s))):
+            executor = ae.ActionExecutor(settings=None)
+            self.assertTrue(executor.tap("ctrl+1", 30))
+            self.assertTrue(executor.tap("q", 30))
+        folga = ae.MODIFIER_LEAD_MS / 1000.0
+        self.assertEqual(eventos, [
+            ("down", "ctrl"), ("wait", folga), ("down", "1"), ("wait", 0.03),
+            ("up", "1"), ("wait", folga), ("up", "ctrl"),
+            ("down", "q"), ("wait", 0.03), ("up", "q"),
+        ])
+
+
+    def test_failed_release_never_leaves_ctrl_stuck(self):
+        from unittest import mock
+        from app.services import action_executor as ae
+
+        soltas = []
+
+        def press(k):
+            if k == "1":
+                raise OSError("falhou")
+
+        def release(k):
+            soltas.append(k)
+            if k == "1":
+                raise OSError("falhou de novo")
+
+        teclado = SimpleNamespace(press=press, release=release)
+        with mock.patch.object(ae, "keyboard_module", lambda: teclado),                 mock.patch.object(ae.time, "sleep", lambda s: None):
+            self.assertFalse(ae.ActionExecutor(settings=None).tap("ctrl+1", 30))
+        self.assertEqual(soltas, ["1", "ctrl"])
+
+    def test_pointer_returns_even_when_revive_key_fails(self):
+        from app.services.combo_manager import ComboManager, MacroAction
+
+        class Executor:
+            pos, pendente = (800, 900), None
+
+            def click(self, x, y, restore):
+                self.pendente, self.pos = self.pos, (x, y)
+                return True
+
+            def tap(self, key, hold_ms):
+                return key != "q"  # o revive falha
+
+            def restore_pointer(self):
+                if self.pendente:
+                    self.pos, self.pendente = self.pendente, None
+                return True
+
+        executor, fim = Executor(), threading.Event()
+        combo = ComboManager(executor, on_finish=lambda status: fim.set())
+        combo.start([
+            MacroAction("puxar", "key", key="ctrl+1"),
+            MacroAction("apontar", "click", x=1048, y=563, restore=False),
+            MacroAction("revive", "key", key="q"),
+            MacroAction("voltar", "pointer_home"),
+        ], "t")
+        self.assertTrue(fim.wait(2))
+        self.assertEqual(executor.pos, (800, 900))
+
+
+class TeamBarTests(unittest.TestCase):
+    """Deteccao do desmaiado pela barra de vida, com pixels sinteticos."""
+
+    VERDE, AZUL, FUNDO = (45, 81, 48), (129, 88, 39), (19, 19, 18)  # BGR
+
+    def grab_com(self, vazios):
+        from app.services import team_bar as tb
+
+        def grab(x, y, w, h):
+            retrato = (x - tb.HP_DX, y - tb.HP_DY)
+            cor = self.FUNDO if retrato in vazios else self.VERDE
+            linhas = [bytes(cor + (255,)) * w if i in (8, 9) else
+                      bytes((self.AZUL if i in (17, 18) else self.FUNDO) + (255,)) * w
+                      for i in range(h)]
+            return b"".join(linhas)
+        return grab
+
+    def test_finds_only_the_empty_bar(self):
+        from app.services.team_bar import find_fainted
+        retratos = [(29, 133), (24, 177), (28, 220), (31, 269), (26, 316)]
+        self.assertIsNone(find_fainted(retratos, self.grab_com(set())))
+        for i, r in enumerate(retratos):
+            self.assertEqual(find_fainted(retratos, self.grab_com({r})), i)
+        # Tudo escuro (janela coberta): nao arrisca clique.
+        self.assertIsNone(find_fainted(retratos, self.grab_com(set(retratos))))
 
 if __name__ == "__main__":
     unittest.main()

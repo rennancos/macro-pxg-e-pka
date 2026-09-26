@@ -22,6 +22,9 @@ from app.gui.widgets import (
     COLOR_OK,
     COLOR_WARN,
     BasePage,
+    accent,
+    accent_hover,
+    apply_game_theme,
 )
 from app.services.controller import AppController
 
@@ -74,6 +77,7 @@ class MainWindow(ctk.CTk):
         self._build_pages()
 
         controller.add_listener(self._mark_dirty)
+        self._theme_game = ""
         self._refresh()
         self._tick_id = self.after(_REFRESH_MS, self._tick)
 
@@ -202,7 +206,7 @@ class MainWindow(ctk.CTk):
             self.current_page.grid_remove()
         if self._current_title:
             self._nav_buttons[self._current_title].configure(fg_color="transparent")
-        self._nav_buttons[name].configure(fg_color="#245a8d")
+        self._nav_buttons[name].configure(fg_color=accent())
         page.grid(row=0, column=0, sticky="nsew")
         self.current_page = page
         self._current_title = name
@@ -223,6 +227,9 @@ class MainWindow(ctk.CTk):
         controller = self.controller
 
         self.game_menu.set(controller.profile.game)
+        if controller.profile.game != self._theme_game:
+            self._theme_game = controller.profile.game
+            apply_game_theme(self, self._theme_game)
         names = [name for name in controller.profiles.names
                  if controller.profiles.get(name).game == controller.profile.game]
         if list(self.profile_menu.cget("values")) != names:
@@ -248,8 +255,8 @@ class MainWindow(ctk.CTk):
 
         self.toggle_button.configure(
             text="DESATIVAR HOTKEYS" if controller.enabled else "ATIVAR HOTKEYS",
-            fg_color="#8a3b44" if controller.enabled else "#245a8d",
-            hover_color="#713037" if controller.enabled else "#1f4d78",
+            fg_color="#8a3b44" if controller.enabled else accent(),
+            hover_color="#713037" if controller.enabled else accent_hover(),
         )
         self.emergency_label.configure(
             text=f"Emergencia: {controller.settings.emergency_hotkey.upper()}"

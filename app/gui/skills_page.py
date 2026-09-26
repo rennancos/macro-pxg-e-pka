@@ -5,7 +5,9 @@ from tkinter import ttk
 import customtkinter as ctk
 
 from app.constants import MAX_DELAY_MS
-from app.gui.widgets import COLOR_ERROR, COLOR_MUTED, BasePage, Card, HotkeyEntry, IntEntry
+from app.gui.widgets import (
+    COLOR_ERROR, COLOR_MUTED, BasePage, Card, HotkeyEntry, IntEntry, accent,
+)
 from app.models.profile import SkillConfig
 
 
@@ -68,10 +70,11 @@ class SkillsPage(BasePage):
         style = ttk.Style(self)
         style.configure("Skills.Treeview", background=background, fieldbackground=background,
                         foreground=foreground, rowheight=32, font=("Segoe UI", 10))
-        style.map("Skills.Treeview", background=[("selected", "#245a8d")],
+        style.map("Skills.Treeview", background=[("selected", accent())],
                   foreground=[("selected", "white")])
 
     def on_show(self) -> None:
+        self._style_table()  # a cor de selecao segue o jogo
         self._skills = [SkillConfig.from_dict(skill.to_dict(), i)
                         for i, skill in enumerate(self.controller.profile.skills)]
         self._selected = min(self._selected, len(self._skills) - 1)
